@@ -1,0 +1,51 @@
+# Source control
+.git/
+.gitignore
+.gitattributes
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Python environments and generated files
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyd
+*$py.class
+
+# Local databases and runtime data
+support_history.db
+*.db
+*.sqlite
+*.sqlite3
+uploads/
+logs/
+temp/
+tmp/
+*.log
+
+# Test, type-check, lint, and coverage output
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Build and packaging output
+build/
+dist/
+*.egg-info/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local documentation artifacts are not required at runtime
+docs/screenshots/*.png

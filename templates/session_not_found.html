@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Session Not Found</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <h1>Session Not Found</h1>
+
+    <p>
+        The session you requested does not exist.
+    </p>
+
+    <div class="nav-buttons">
+
+        <a href="javascript:history.back()">
+            ← Back
+        </a>
+
+        <a href="/">
+            🏠 Home
+        </a>
+
+    </div>
+
+    <div class="session-search">
+
+        <h3>Try Another Session</h3>
+
+        <form action="/session-search" method="POST">
+
+            <input
+                type="number"
+                name="session_id"
+                placeholder="Session ID"
+                required
+            >
+
+            <button type="submit">
+                Go
+            </button>
+
+        </form>
+
+    </div>
+
+</body>
+
+</html>

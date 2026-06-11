@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Session Details</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<main class="print-session">
+
+<h1>Support Session #{{ session[0] }}</h1>
+
+<p class="session-meta">
+    Created: {{ session[1] }}
+    <br>
+    Mode: {{ session[2] }}
+</p>
+
+<div class="nav-buttons no-print">
+
+    <a href="/">🏠 Home</a>
+
+    {% if previous_session_id is not none %}
+    <a href="/session/{{ previous_session_id }}">
+        ← Previous
+    </a>
+    {% endif %}
+
+    {% if next_session_id is not none %}
+    <a href="/session/{{ next_session_id }}">
+        Next →
+    </a>
+    {% endif %}
+
+</div>
+
+<div class="session-search no-print">
+
+    <h3>Jump to Session</h3>
+
+    <form action="/session-search" method="POST">
+
+        <input
+            type="number"
+            name="session_id"
+            placeholder="Enter Session ID"
+            required
+        >
+
+        <button type="submit">
+            Go
+        </button>
+
+    </form>
+
+</div>
+
+<section class="session-browser no-print">
+    <div class="session-browser-heading">
+        <div>
+            <h3>Search Sessions</h3>
+            <p>Find another saved session by support mode or issue text.</p>
+        </div>
+
+        {% if session_search_results is not none %}
+        <a
+            href="{{ url_for('view_session', session_id=session[0]) }}"
+            class="clear-search-link"
+        >
+            Clear Search
+        </a>
+        {% endif %}
+    </div>
+
+    <form
+        method="GET"
+        action="{{ url_for('view_session', session_id=session[0]) }}"
+        class="session-browser-form"
+    >
+        <select name="session_filter_mode" aria-label="Filter sessions by support mode">
+            <option value="" {% if session_filter_mode == "" %}selected{% endif %}>
+                All Modes
+            </option>
+            <option value="Azure" {% if session_filter_mode == "Azure" %}selected{% endif %}>
+                Azure
+            </option>
+            <option value="AWS" {% if session_filter_mode == "AWS" %}selected{% endif %}>
+                AWS
+            </option>
+            <option value="Terraform" {% if session_filter_mode == "Terraform" %}selected{% endif %}>
+                Terraform
+            </option>
+            <option value="Remote Access & VDI" {% if session_filter_mode == "Remote Access & VDI" %}selected{% endif %}>
+                Remote Access & VDI
+            </option>
+            <option value="General Infrastructure" {% if session_filter_mode == "General Infrastructure" %}selected{% endif %}>
+                General Infrastructure
+            </option>
+        </select>
+
+        <input
+            type="text"
+            name="session_search_text"
+            placeholder="Search issue text..."
+            value="{{ session_search_text }}"
+            aria-label="Search saved session issue text"
+        >
+
+        <button type="submit">Search</button>
+    </form>
+
+    {% if session_search_results is not none %}
+    <div class="session-search-results">
+        <p class="session-result-count">
+            {{ session_search_results|length }} session{% if session_search_results|length != 1 %}s{% endif %} found
+        </p>
+
+        {% if session_search_results %}
+            {% for result in session_search_results %}
+            <a
+                href="{{ url_for('view_session', session_id=result[0]) }}"
+                class="session-result-card{% if result[0] == session[0] %} current-session-result{% endif %}"
+            >
+                <span class="session-result-main">
+                    <strong>Session #{{ result[0] }} - {{ result[2] }}</strong>
+                    <span>{{ result[3] }}</span>
+                </span>
+                <span class="session-result-date">{{ result[1] }}</span>
+            </a>
+            {% endfor %}
+        {% else %}
+            <p class="no-session-results">No matching sessions found.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+
+    <div class="response-box session-issue">
+        <h2>Issue</h2>
+        <p>{{ session[3] }}</p>
+
+    </div>
+
+    {% if attachments %}
+    <section class="session-attachments no-print">
+        <div>
+            <h2>Uploaded Files</h2>
+            <p>Original files saved with this support session.</p>
+        </div>
+
+        <div class="attachment-list">
+            {% for attachment in attachments %}
+            <a
+                href="{{ url_for(
+                    'download_session_attachment',
+                    session_id=session[0],
+                    attachment_id=attachment[0]
+                ) }}"
+                class="attachment-card"
+            >
+                <span>
+                    <strong>{{ attachment[1] }}</strong>
+                    <small>{{ attachment[2] }} · {{ "{:,}".format(attachment[3]) }} bytes</small>
+                </span>
+                <span class="attachment-download">Download</span>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <br>
+
+    <div class="response-header">
+        <h2 class="response-title">AI Response</h2>
+
+        <div class="response-actions no-print">
+            <button
+                type="button"
+                class="copy-response-btn"
+                onclick="copyResponse('saved-response', 'saved-copy-status')"
+            >
+                Copy Response
+            </button>
+
+            <button
+                type="button"
+                class="print-btn"
+                onclick="printSession()"
+            >
+                Print Session
+            </button>
+
+            <a
+                href="{{ url_for('export_session_pdf', session_id=session[0]) }}"
+                class="response-action-link"
+            >
+                Export to PDF
+            </a>
+
+            <button
+                type="button"
+                class="email-session-btn"
+                onclick="toggleEmailForm()"
+                aria-controls="email-session-panel"
+                aria-expanded="false"
+            >
+                Email Session
+            </button>
+
+            <form
+                action="{{ url_for('delete_session_route', session_id=session[0]) }}"
+                method="POST"
+                class="delete-form"
+                onsubmit="return confirm('Delete support session #{{ session[0] }}? This cannot be undone.');"
+            >
+                <button type="submit" class="delete-btn">
+                    Delete Session
+                </button>
+            </form>
+
+            <span
+                id="saved-copy-status"
+                class="copy-status"
+                aria-live="polite"
+            ></span>
+        </div>
+    </div>
+
+    {% if email_message %}
+    <div class="feedback-box {{ email_message_type }}-feedback no-print">
+        {{ email_message }}
+    </div>
+    {% endif %}
+
+    <section id="email-session-panel" class="email-session-panel no-print" hidden>
+        <div class="email-panel-heading">
+            <div>
+                <h3>Email Session</h3>
+                <p>Send the session summary with the PDF attached.</p>
+            </div>
+
+            <button
+                type="button"
+                class="email-close-btn"
+                onclick="toggleEmailForm(false)"
+                aria-label="Close email form"
+            >
+                Close
+            </button>
+        </div>
+
+        <form
+            action="{{ url_for('email_session', session_id=session[0]) }}"
+            method="POST"
+            class="email-session-form"
+        >
+            <label for="recipient_email">Recipients</label>
+            <input
+                type="text"
+                id="recipient_email"
+                name="recipient_email"
+                maxlength="2600"
+                autocomplete="email"
+                placeholder="user@example.com; teammate@example.com"
+                required
+            >
+            <p class="email-recipient-help">
+                Separate up to 10 addresses with commas or semicolons.
+            </p>
+
+            <label for="email_subject">Subject (Optional)</label>
+            <input
+                type="text"
+                id="email_subject"
+                name="email_subject"
+                maxlength="200"
+                placeholder="AI Support Session #{{ session[0] }} - {{ session[2] }}"
+            >
+
+            <button type="submit">Send Email</button>
+        </form>
+    </section>
+
+    <div class="response-box" id="saved-response">
+
+        {{ session[4] | safe }}
+
+    </div>
+
+</main>
+
+    <script>
+        const copyFeedbackTimers = {};
+
+        function printSession() {
+            window.print();
+        }
+
+        function toggleEmailForm(show) {
+            const panel = document.getElementById("email-session-panel");
+            const button = document.querySelector(".email-session-btn");
+            const shouldShow = show === undefined ? panel.hidden : show;
+
+            panel.hidden = !shouldShow;
+            button.setAttribute("aria-expanded", String(shouldShow));
+
+            if (shouldShow) {
+                document.getElementById("recipient_email").focus();
+            }
+        }
+
+        {% if auto_open_email %}
+        window.addEventListener("load", () => {
+            toggleEmailForm(true);
+            document.getElementById("email-session-panel").scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        });
+        {% endif %}
+
+        {% if auto_print %}
+        window.addEventListener("load", () => {
+            window.print();
+        });
+        {% endif %}
+
+        function showCopyFeedback(statusId, message, isSuccess) {
+            const status = document.getElementById(statusId);
+
+            if (!status) {
+                return;
+            }
+
+            clearTimeout(copyFeedbackTimers[statusId]);
+            status.textContent = message;
+            status.classList.toggle("copy-success", isSuccess);
+            status.classList.toggle("copy-error", !isSuccess);
+
+            copyFeedbackTimers[statusId] = setTimeout(() => {
+                status.textContent = "";
+                status.classList.remove("copy-success", "copy-error");
+            }, 2500);
+        }
+
+        function fallbackCopyText(text) {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.setAttribute("readonly", "");
+            textarea.className = "copy-fallback";
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            let copied = false;
+
+            try {
+                copied = document.execCommand("copy");
+            } catch (error) {
+                copied = false;
+            }
+
+            document.body.removeChild(textarea);
+            return copied;
+        }
+
+        async function copyResponse(responseId, statusId) {
+            const response = document.getElementById(responseId);
+            const text = response ? response.innerText.trim() : "";
+
+            if (!text) {
+                showCopyFeedback(statusId, "Unable to copy response.", false);
+                return;
+            }
+
+            try {
+                if (!navigator.clipboard || !navigator.clipboard.writeText) {
+                    throw new Error("Clipboard API unavailable");
+                }
+
+                await navigator.clipboard.writeText(text);
+                showCopyFeedback(statusId, "Response copied.", true);
+            } catch (error) {
+                const copied = fallbackCopyText(text);
+                showCopyFeedback(
+                    statusId,
+                    copied ? "Response copied." : "Unable to copy response.",
+                    copied
+                );
+            }
+        }
+    </script>
+
+</body>
+
+</html>

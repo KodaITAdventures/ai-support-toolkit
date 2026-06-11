@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Statistics Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <h1>Statistics Dashboard</h1>
+
+    <div class="stats-grid">
+
+        <div class="stats-card">
+            <h3>Total Sessions</h3>
+            <div class="stat-number">
+                {{ total_sessions }}
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <h3>Azure</h3>
+            <div class="stat-number">
+                {{ azure_count }}
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <h3>AWS</h3>
+            <div class="stat-number">
+                {{ aws_count }}
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <h3>Terraform</h3>
+            <div class="stat-number">
+                {{ terraform_count }}
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <h3>Remote Access & VDI</h3>
+            <div class="stat-number">
+                {{ vdi_count }}
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <h3>General Infrastructure</h3>
+            <div class="stat-number">
+                {{ general_count }}
+            </div>
+        </div>
+
+    </div>
+
+    <br>
+
+    <a class="back-link" href="/">
+        ← Back to Home
+    </a>
+
+</body>
+
+</html>
