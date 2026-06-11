@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Support Session #{{ session[0] }}</title>
+
+    <style>
+        @page {
+            size: letter;
+            margin: 0.65in;
+        }
+
+        body {
+            color: #111111;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.45;
+        }
+
+        h1 {
+            color: #1f5f99;
+            font-size: 22pt;
+            margin: 0 0 8px;
+        }
+
+        h2 {
+            color: #1f5f99;
+            font-size: 15pt;
+            margin: 18px 0 8px;
+            page-break-after: avoid;
+        }
+
+        h3,
+        h4 {
+            page-break-after: avoid;
+        }
+
+        .metadata {
+            color: #444444;
+            margin-bottom: 22px;
+        }
+
+        .section {
+            margin-bottom: 18px;
+        }
+
+        ul,
+        ol {
+            margin: 6px 0 12px;
+            padding-left: 22px;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+
+        pre {
+            background-color: #f3f4f6;
+            border: 1px solid #cccccc;
+            font-family: Courier, monospace;
+            font-size: 8.5pt;
+            padding: 10px;
+            white-space: pre-wrap;
+        }
+
+        code {
+            font-family: Courier, monospace;
+            font-size: 8.5pt;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Support Session #{{ session[0] }}</h1>
+
+    <div class="metadata">
+        Created: {{ session[1] }}
+        <br>
+        Support Mode: {{ session[2] }}
+    </div>
+
+    <div class="section">
+        <h2>Issue</h2>
+        <p>{{ session[3] }}</p>
+    </div>
+
+    <div class="section">
+        <h2>AI Response</h2>
+        {{ session[4] | safe }}
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AI Support Toolkit</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+<div class="header-row">
+
+    <div>
+        <h1>AI Support Toolkit</h1>
+
+        <p class="subtitle">
+            AI-powered infrastructure troubleshooting assistant for cloud, IaC, and remote access environments.
+        </p>
+    </div>
+
+    <a href="/stats" class="stats-btn">
+        📊 Statistics Dashboard
+    </a>
+
+</div>
+
+    <form method="POST" enctype="multipart/form-data" onsubmit="showLoading()">
+
+        <label for="support_mode">Support Mode:</label>
+
+        <br><br>
+
+        <select name="support_mode" id="support_mode">
+            <option value="Azure" {% if selected_mode == "Azure" %}selected{% endif %}>Azure</option>
+            <option value="AWS" {% if selected_mode == "AWS" %}selected{% endif %}>AWS</option>
+            <option value="Terraform" {% if selected_mode == "Terraform" %}selected{% endif %}>Terraform</option>
+            <option value="Remote Access & VDI" {% if selected_mode == "Remote Access & VDI" %}selected{% endif %}>Remote Access & VDI</option>
+            <option value="General Infrastructure" {% if selected_mode == "General Infrastructure" %}selected{% endif %}>General Infrastructure</option>
+        </select>
+
+        <br><br>
+
+        <textarea
+            name="log_text"
+            placeholder="Paste logs, errors, or infrastructure issues here..."
+        >{{ log_text_value }}</textarea>
+
+        <div class="upload-panel">
+            <label for="support_files">Troubleshooting Files (Optional)</label>
+            <p class="upload-guidance">
+                Up to 5 files. Supported: TXT, LOG, CSV, JSON, PDF.
+                Maximum 2 MB per file and 5 MB total. PDFs must contain
+                extractable text and cannot be password protected.
+            </p>
+
+            <input
+                type="file"
+                id="support_files"
+                name="support_files"
+                accept=".txt,.log,.csv,.json,.pdf"
+                multiple
+                onchange="showSelectedFiles()"
+            >
+
+            <ul id="selected-file-list" class="selected-file-list"></ul>
+        </div>
+
+        {% if accepted_uploads %}
+        <div class="upload-feedback upload-success">
+            <strong>Files included in analysis:</strong>
+            <ul>
+                {% for upload in accepted_uploads %}
+                <li>
+                    {{ upload.filename }} —
+                    {{ "{:,}".format(upload.character_count) }}
+                    characters extracted{% if upload.truncated %} (truncated for analysis){% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            <p class="upload-once-note">
+                Original files were saved with this session. Select them again
+                before running a different analysis.
+            </p>
+        </div>
+        {% endif %}
+
+        {% if upload_errors %}
+        <div class="upload-feedback upload-error">
+            <strong>File upload notice:</strong>
+            <ul>
+                {% for upload_error in upload_errors %}
+                <li>{{ upload_error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <button type="submit" id="analyzeButton">Analyze Issue</button>
+
+    </form>
+
+    {% if response %}
+    <div class="response-header">
+        <div>
+            <h2 class="response-title">AI Response</h2>
+
+            {% if saved_session_id %}
+            <p class="saved-session-message">
+                Saved as Session #{{ saved_session_id }}
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="response-actions">
+            <button
+                type="button"
+                class="copy-response-btn"
+                onclick="copyResponse('current-response', 'current-copy-status')"
+            >
+                Copy Response
+            </button>
+
+            {% if saved_session_id %}
+            <a
+                href="{{ url_for('export_session_pdf', session_id=saved_session_id) }}"
+                class="response-action-link"
+            >
+                Export to PDF
+            </a>
+
+            <a
+                href="{{ url_for('view_session', session_id=saved_session_id, print=1) }}"
+                class="response-action-link"
+                target="_blank"
+                rel="noopener"
+            >
+                Print Session
+            </a>
+
+            <a
+                href="{{ url_for('view_session', session_id=saved_session_id, email=1) }}#email-session-panel"
+                class="response-action-link"
+            >
+                Email Session
+            </a>
+
+            <a
+                href="{{ url_for('view_session', session_id=saved_session_id) }}"
+                class="response-action-link"
+            >
+                Go to Session
+            </a>
+            {% endif %}
+
+            <span
+                id="current-copy-status"
+                class="copy-status"
+                aria-live="polite"
+            ></span>
+        </div>
+    </div>
+
+    <div class="response-box" id="current-response">
+        {{ response | safe }}
+    </div>
+    {% endif %}
+
+    <hr>
+
+<form method="POST">
+
+    <h3>Search Sessions</h3>
+
+    <select name="filter_mode">   
+        
+    <option value=""
+        {% if filter_mode == "" %}selected{% endif %}>
+        All Modes
+    </option>
+
+    <option value="Azure"
+        {% if filter_mode == "Azure" %}selected{% endif %}>
+        Azure
+    </option>
+
+    <option value="AWS"
+        {% if filter_mode == "AWS" %}selected{% endif %}>
+        AWS
+    </option>
+
+    <option value="Terraform"
+        {% if filter_mode == "Terraform" %}selected{% endif %}>
+        Terraform
+    </option>
+
+    <option value="Remote Access & VDI"
+        {% if filter_mode == "Remote Access & VDI" %}selected{% endif %}>
+        Remote Access & VDI
+    </option>
+
+    <option value="General Infrastructure"
+        {% if filter_mode == "General Infrastructure" %}selected{% endif %}>
+        General Infrastructure
+    </option>
+</select>
+    <br><br>
+
+        <input
+        type="text"
+        name="search_text"
+        placeholder="Search prompt text..."
+        value = "{{ search_text }}"
+        >
+
+    <br><br>
+
+    <button type="submit">
+        Search
+    </button>
+
+</form>
+<h2>Recent Sessions</h2>
+
+{% if delete_message %}
+<div class="feedback-box {{ delete_message_type }}-feedback">
+    {{ delete_message }}
+</div>
+{% endif %}
+
+<p>Count: {{ recent_sessions|length }}</p>
+{% if recent_sessions %}
+
+    {% for session in recent_sessions %}
+
+<div class="history-item">
+
+    <div class="session-header">
+        <strong>{{ session[2] }}</strong>
+        <span>{{ session[1] }}</span>
+    </div>
+
+    <div class="session-prompt">
+        {{ session[3] }}
+    </div>
+
+    <a href="/session/{{ session[0] }}">
+        <button class="view-btn">View Session</button>
+    </a>
+
+</div>
+
+    {% endfor %}
+
+<div class="pagination">
+
+    {% if page > 1 %}
+        <a class="page-link"
+           href="{{ url_for('home', page=page - 1) }}">
+            ← Previous
+        </a>
+    {% endif %}
+
+    <span class="page-info">
+        Page {{ page }} of {{ total_pages }}
+    </span>
+
+    {% if page < total_pages %}
+        <a class="page-link"
+           href="{{ url_for('home', page=page + 1) }}">
+            Next →
+        </a>
+    {% endif %}
+
+</div>
+
+{% else %}
+
+    <p>No sessions found.</p>
+
+{% endif %}
+
+    <script>
+        function showLoading() {
+            const button = document.getElementById("analyzeButton");
+            button.disabled = true;
+            button.textContent = "Analyzing...";
+        }
+
+        function showSelectedFiles() {
+            const input = document.getElementById("support_files");
+            const list = document.getElementById("selected-file-list");
+            list.textContent = "";
+
+            Array.from(input.files).forEach((file) => {
+                const item = document.createElement("li");
+                const size = file.size < 1024 * 1024
+                    ? `${Math.ceil(file.size / 1024)} KB`
+                    : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+                item.textContent = `${file.name} (${size})`;
+                list.appendChild(item);
+            });
+        }
+
+        const copyFeedbackTimers = {};
+
+        function showCopyFeedback(statusId, message, isSuccess) {
+            const status = document.getElementById(statusId);
+
+            if (!status) {
+                return;
+            }
+
+            clearTimeout(copyFeedbackTimers[statusId]);
+            status.textContent = message;
+            status.classList.toggle("copy-success", isSuccess);
+            status.classList.toggle("copy-error", !isSuccess);
+
+            copyFeedbackTimers[statusId] = setTimeout(() => {
+                status.textContent = "";
+                status.classList.remove("copy-success", "copy-error");
+            }, 2500);
+        }
+
+        function fallbackCopyText(text) {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.setAttribute("readonly", "");
+            textarea.className = "copy-fallback";
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            let copied = false;
+
+            try {
+                copied = document.execCommand("copy");
+            } catch (error) {
+                copied = false;
+            }
+
+            document.body.removeChild(textarea);
+            return copied;
+        }
+
+        async function copyResponse(responseId, statusId) {
+            const response = document.getElementById(responseId);
+            const text = response ? response.innerText.trim() : "";
+
+            if (!text) {
+                showCopyFeedback(statusId, "Unable to copy response.", false);
+                return;
+            }
+
+            try {
+                if (!navigator.clipboard || !navigator.clipboard.writeText) {
+                    throw new Error("Clipboard API unavailable");
+                }
+
+                await navigator.clipboard.writeText(text);
+                showCopyFeedback(statusId, "Response copied.", true);
+            } catch (error) {
+                const copied = fallbackCopyText(text);
+                showCopyFeedback(
+                    statusId,
+                    copied ? "Response copied." : "Unable to copy response.",
+                    copied
+                );
+            }
+        }
+    </script>
+
+</body>
+
+</html>
